@@ -1,3 +1,30 @@
+# Установка необходимых для работы библиотек
+import sys
+import pkg_resources
+import subprocess
+
+def install_required_libraries():
+    requirements = None
+    with open(r"options/requirements.txt") as f:
+        requirements = f.read()
+     
+    requirements = requirements.split("\n")
+    installed = [pkg.key for pkg in pkg_resources.working_set]
+
+    def install(package):
+        python = sys.executable
+        print(f"Install {package}...")
+        subprocess.check_call([python, '-m', 'pip', 'install', package])
+        print(f"Install successfully\n----------------------")
+
+    for r in requirements:
+        if not r in installed:
+            install(r)
+    print("All necessary libraries are installed")
+
+install_required_libraries()
+################################################################################
+
 import tensorflow.keras.applications.efficientnet as eff_net
 import tensorflow as tf
 import numpy as np
@@ -5,12 +32,17 @@ import PIL
 import io
 import base64
 import cv2 as cv
+import gdown
+import os.path
 
 from flask import Flask, jsonify, request
 
 IMAGE_SIZE = (128, 128, 3)
 map_classes = {0: "airplane", 1: "bicycle", 2: "boat", 3: "bus",
                4: "car", 5: "motorcycle", 6: "train", 7: "truck"}
+
+url = 'https://drive.google.com/uc?id=1syFnoB6vwdUPrP65rO_ZFG58HhTVt68X'
+output = r"model.hdf5"
 
 def preprocess_input_model(_image):
     _image = _image.replace("data:image/jpeg;base64,", "")
@@ -42,8 +74,11 @@ def get_compiled_model():
     
     return model
 
+if not os.path.exists(output):
+    gdown.download(url, output, quiet=False)
+
 conv_NN = get_compiled_model()
-conv_NN.load_weights(r"efficientnetb7/best_model.hdf5")
+conv_NN.load_weights(r"model.hdf5")
 
 app = Flask(__name__)
 client = app.test_client()

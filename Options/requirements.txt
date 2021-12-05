@@ -1,7 +1,6 @@
-urllib3
-matplotlib
+numpy==1.19.5
 tensorflow-gpu
-regex
-numpy
-path
 pillow
+opencv-python
+gdown
+flask
