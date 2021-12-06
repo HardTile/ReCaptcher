@@ -95,22 +95,27 @@ def get_list():
     return jsonify(data)
 
 @app.route("/predict", methods=["POST"])
-def update_list():
+def predict():
     new_one = request.json
+    images = new_one["images"]
+    images = images.split("\n")
     
-    base64_image = new_one["image"]
+    answers = []
     
-    image = preprocess_input_model(base64_image)
-    pred = np.argmax(conv_NN.predict(image), axis=-1)
+    for base64_image in images:
+        image = preprocess_input_model(base64_image)
+        pred = np.argmax(conv_NN.predict(image), axis=-1)
     
-    answer = [
-        {
-            "image": base64_image,
-            "answer": map_classes[pred[0]]
-        }
-    ]
+        #Возвращение ответа в формате обычного списка с предсказаниями
+        answers.append(map_classes[pred[0]])
+        
+        #Возвращение ответа в формате JSON с кодом изображения
+        # answer = {
+        #     "image": base64_image,
+        #     "answer": map_classes[pred[0]]}
+        # answers.append(answer)
     
-    return jsonify(answer)
+    return jsonify(answers)
 
 if __name__ == "__main__":
     app.run()
