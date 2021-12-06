@@ -28,7 +28,6 @@ install_required_libraries()
 import tensorflow.keras.applications.efficientnet as eff_net
 import tensorflow as tf
 import numpy as np
-import PIL
 import io
 import base64
 import cv2 as cv
@@ -44,7 +43,9 @@ map_classes = {0: "airplane", 1: "bicycle", 2: "boat", 3: "bus",
 url = 'https://drive.google.com/uc?id=1syFnoB6vwdUPrP65rO_ZFG58HhTVt68X'
 output = r"model.hdf5"
 
-def preprocess_input_model(_image):
+def preprocess_input_model(_image): 
+    import PIL
+    
     _image = _image.replace("data:image/jpeg;base64,", "")
     _image = PIL.Image.open(io.BytesIO(base64.b64decode(_image)))
     
@@ -96,15 +97,15 @@ def get_list():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    new_one = request.json
-    images = new_one["images"]
+    data = request.data
+    images = data.decode("utf-8")
     images = images.split("\n")
     
     answers = []
     
     for base64_image in images:
-        image = preprocess_input_model(base64_image)
-        pred = np.argmax(conv_NN.predict(image), axis=-1)
+        img = preprocess_input_model(base64_image)
+        pred = np.argmax(conv_NN.predict(img), axis=-1)
     
         #Возвращение ответа в формате обычного списка с предсказаниями
         answers.append(map_classes[pred[0]])
