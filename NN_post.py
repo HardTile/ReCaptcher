@@ -25,7 +25,7 @@ def install_required_libraries():
 install_required_libraries()
 ################################################################################
 
-import tensorflow.keras.applications.efficientnet as eff_net
+import tensorflow.keras.applications.mobilenet_v2 as mobilenet
 import tensorflow as tf
 import numpy as np
 import io
@@ -33,6 +33,7 @@ import base64
 import cv2 as cv
 import gdown
 import os.path
+import PIL
 
 from flask import Flask, jsonify, request
 
@@ -40,12 +41,10 @@ IMAGE_SIZE = (128, 128, 3)
 map_classes = {0: "airplane", 1: "bicycle", 2: "boat", 3: "bus",
                4: "car", 5: "motorcycle", 6: "train", 7: "truck"}
 
-url = 'https://drive.google.com/uc?id=1syFnoB6vwdUPrP65rO_ZFG58HhTVt68X'
-output = r"model.hdf5"
+url = 'https://drive.google.com/uc?id=1sZBWSTma0pD0JkpXT0HExMcYGe7LQFdv'
+output = r"weights.hdf5"
 
 def preprocess_input_model(_image): 
-    import PIL
-    
     _image = _image.replace("data:image/jpeg;base64,", "")
     _image = PIL.Image.open(io.BytesIO(base64.b64decode(_image)))
     
@@ -54,12 +53,12 @@ def preprocess_input_model(_image):
     
     crop_image = cv.cvtColor(np.array(crop_image), cv.COLOR_BGRA2BGR)
     
-    return eff_net.preprocess_input(crop_image)[None, ...]
+    return mobilenet.preprocess_input(crop_image)[None, ...]
 
 def get_compiled_model():  
-    base_model = eff_net.EfficientNetB7(include_top=False,
-                                        weights="imagenet",
-                                        input_shape=(IMAGE_SIZE))
+    base_model = mobilenet.MobileNetV2(include_top=False,
+                                       weights="imagenet",
+                                       input_shape=(IMAGE_SIZE))
     base_model.trainable = False
 
     model = tf.keras.Sequential([
@@ -69,7 +68,7 @@ def get_compiled_model():
             tf.keras.layers.Dense(8, activation="softmax")
     ])
 
-    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1.3e-4),
+    model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1.5e-4),
                   loss=tf.keras.losses.SparseCategoricalCrossentropy(),
                   metrics=["accuracy"])
     
@@ -79,7 +78,7 @@ if not os.path.exists(output):
     gdown.download(url, output, quiet=False)
 
 conv_NN = get_compiled_model()
-conv_NN.load_weights(r"model.hdf5")
+conv_NN.load_weights(output)
 
 app = Flask(__name__)
 client = app.test_client()
@@ -101,14 +100,16 @@ def predict():
     images = data.decode("utf-8")
     images = images.split("\n")
     
-    answers = []
+    answers = {}
     
-    for base64_image in images:
+    for i, base64_image in enumerate(images):
         img = preprocess_input_model(base64_image)
         pred = np.argmax(conv_NN.predict(img), axis=-1)
-    
+        
+        # result = {i: map_classes[pred[0]]}
+        
         #Возвращение ответа в формате обычного списка с предсказаниями
-        answers.append(map_classes[pred[0]])
+        answers[i] = map_classes[pred[0]]
         
         #Возвращение ответа в формате JSON с кодом изображения
         # answer = {
