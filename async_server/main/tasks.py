@@ -44,8 +44,6 @@ map_classes = {0: "airplane", 1: "bicycle", 2: "boat", 3: "bus",
 url = 'https://drive.google.com/uc?id=1sZBWSTma0pD0JkpXT0HExMcYGe7LQFdv'
 output = r"weights.hdf5"
 
-path = "tune_model/best_model.hdf5"
-
 def preprocess_input_model(_image): 
     _image = _image.replace("data:image/jpeg;base64,", "")
     _image = PIL.Image.open(io.BytesIO(base64.b64decode(_image)))
@@ -80,8 +78,7 @@ if not os.path.exists(output):
     gdown.download(url, output, quiet=False)
     
 conv_NN = get_compiled_model()
-conv_NN.load_weights(output) # Закомментировать эту строку, если используется заново обученная модель
-# conv_NN.load_weights(path) # А эту строку раскомментировать
+conv_NN.load_weights(output)
 
 celery = make_celery()
 
