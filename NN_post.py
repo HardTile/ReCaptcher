@@ -44,6 +44,8 @@ map_classes = {0: "airplane", 1: "bicycle", 2: "boat", 3: "bus",
 url = 'https://drive.google.com/uc?id=1sZBWSTma0pD0JkpXT0HExMcYGe7LQFdv'
 output = r"weights.hdf5"
 
+path = "tune_model/best_model.hdf5"
+
 def preprocess_input_model(_image): 
     _image = _image.replace("data:image/jpeg;base64,", "")
     _image = PIL.Image.open(io.BytesIO(base64.b64decode(_image)))
@@ -78,10 +80,10 @@ if not os.path.exists(output):
     gdown.download(url, output, quiet=False)
 
 conv_NN = get_compiled_model()
-conv_NN.load_weights(output)
+conv_NN.load_weights(output) # Закомментировать эту строку, если используется заново обученная модель
+# conv_NN.load_weights(path) # А эту строку раскомментировать
 
 app = Flask(__name__)
-client = app.test_client()
 
 data = [
     {
@@ -97,10 +99,12 @@ def get_list():
 @app.route("/predict", methods=["POST"])
 def predict():
     data = request.data
+    images = data
     images = data.decode("utf-8")
     images = images.split("\n")
-    
-    answers = {}
+
+    answers = ""
+    # result = {}
     
     for i, base64_image in enumerate(images):
         img = preprocess_input_model(base64_image)
@@ -109,7 +113,7 @@ def predict():
         # result = {i: map_classes[pred[0]]}
         
         #Возвращение ответа в формате обычного списка с предсказаниями
-        answers[i] = map_classes[pred[0]]
+        answers += f"{i}~" + map_classes[pred[0]] + "\n"
         
         #Возвращение ответа в формате JSON с кодом изображения
         # answer = {
@@ -117,7 +121,7 @@ def predict():
         #     "answer": map_classes[pred[0]]}
         # answers.append(answer)
     
-    return jsonify(answers)
+    return jsonify(result)
 
 if __name__ == "__main__":
-    app.run()
+    app.run(threaded=True)
